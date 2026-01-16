@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Business Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;background:#0e0e0e;color:#fff;font-family:Arial}
+header{background:#1a1a1a;padding:10px;display:flex;justify-content:space-between}
+button{padding:8px;margin:3px;width:100%;background:#2ecc71;border:none;border-radius:6px}
+button:disabled{background:#555}
+.box{background:#141414;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px}
+.section{padding:10px}
+.hidden{display:none}
+#notifications{position:fixed;left:10px;bottom:10px;width:260px}
+.note{background:#1b1b1b;border-left:4px solid #2ecc71;padding:8px;margin-top:6px;animation:fade 4s forwards}
+@keyframes fade{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+
+<body>
+
+<header>
+<div>
+Money: $<span id="money">0</span><br>
+Prestige: <span id="prestige">0</span>
+</div>
+<div>
+<button onclick="toggle('inventory')">Inventory</button>
+<button onclick="toggle('settings')">Settings</button>
+</div>
+</header>
+
+<div id="notifications"></div>
+
+<div class="section">
+
+<div class="box">
+<h3>Manual</h3>
+<button onclick="manual('wood')">Chop Wood</button>
+<button onclick="manual('leaves')">Collect Leaves</button>
+<button onclick="manual('stone')">Mine Stone</button>
+</div>
+
+<div class="box">
+<h3>Structures</h3>
+<button onclick="buy('mine',500)">Mine (+10 stone/min)</button>
+<button onclick="buy('farm',400)">Farm (+10 wood/min)</button>
+<button onclick="buy('factory',800)">Factory (+10 leaves/min)</button>
+</div>
+
+<div class="box">
+<h3>Employees</h3>
+<button onclick="hire('miner',300)">Miner (+5 stone/min)</button>
+<button onclick="hire('logger',300)">Logger (+5 wood/min)</button>
+<button onclick="hire('collector',300)">Collector (+5 leaves/min)</button>
+</div>
+
+<div class="box">
+<h3>Upgrades</h3>
+<button onclick="upgrade('tools')">Better Tools ($1000)</button>
+<button onclick="upgrade('machines')">Machines ($1500)</button>
+</div>
+
+<div class="box">
+<h3>Automation</h3>
+<button onclick="auto=true">Enable Auto Actions</button>
+</div>
+
+<div class="box">
+<h3>Market</h3>
+Wood: $<span id="woodP"></span><br>
+Leaves: $<span id="leafP"></span><br>
+Stone: $<span id="stoneP"></span>
+</div>
+
+<div class="box">
+<h3>Prestige</h3>
+<button onclick="prestige()">Prestige (Reset)</button>
+</div>
+
+</div>
+
+<div id="inventory" class="section hidden">
+<div class="box">
+<pre id="inv"></pre>
+<button onclick="toggle('inventory')">Close</button>
+</div>
+</div>
+
+<div id="settings" class="section hidden">
+<div class="box">
+<button onclick="reset()">Reset Save</button>
+<button onclick="toggle('settings')">Close</button>
+</div>
+</div>
+
+<script>
+let game=JSON.parse(localStorage.getItem("save"))||{
+ money:100,
+ prestige:0,
+ inv:{wood:0,leaves:0,stone:0},
+ structures:{mine:0,farm:0,factory:0},
+ emp:{miner:0,logger:0,collector:0},
+ upgrades:{tools:0,machines:0},
+ auto:false
+};
+
+let market={wood:3,leaves:1,stone:5};
+
+function notify(t){
+ let n=document.createElement("div");
+ n.className="note";
+ n.textContent=t;
+ document.getElementById("notifications").appendChild(n);
+ setTimeout(()=>n.remove(),4000);
+}
+
+function manual(r){
+ game.inv[r]+=1;
+ notify(r+" +1");
+ save();
+}
+
+function buy(t,c){
+ if(game.money<c)return;
+ game.money-=c;
+ game.structures[t]++;
+ save();
+}
+
+function hire(t,c){
+ if(game.money<c)return;
+ game.money-=c;
+ game.emp[t]++;
+ save();
+}
+
+function upgrade(t){
+ let cost=t==="tools"?1000:1500;
+ if(game.money<cost)return;
+ game.money-=cost;
+ game.upgrades[t]++;
+ save();
+}
+
+function prestige(){
+ if(game.money<1000000)return;
+ game.prestige++;
+ game.money=100;
+ game.inv={wood:0,leaves:0,stone:0};
+ game.structures={mine:0,farm:0,factory:0};
+ game.emp={miner:0,logger:0,collector:0};
+ game.upgrades={tools:0,machines:0};
+ notify("Prestiged!");
+ save();
+}
+
+function reset(){
+ localStorage.clear();
+ location.reload();
+}
+
+function toggle(id){
+ document.getElementById(id).classList.toggle("hidden");
+}
+
+setInterval(()=>{
+ let mult=1+game.prestige*0.1;
+ game.inv.stone+=(game.structures.mine*10+game.emp.miner*5)*mult/60;
+ game.inv.wood+=(game.structures.farm*10+game.emp.logger*5)*mult/60;
+ game.inv.leaves+=(game.structures.factory*10+game.emp.collector*5)*mult/60;
+ save();
+},1000);
+
+setInterval(()=>{
+ market.wood=(Math.random()*2+1).toFixed(2);
+ market.leaves=(Math.random()*1.5+0.5).toFixed(2);
+ market.stone=(Math.random()*3+2).toFixed(2);
+},30000);
+
+setInterval(()=>{
+ let e=Math.random();
+ if(e<0.3) notify("Market Boom!");
+ else if(e<0.6) notify("Worker Strike!");
+},120000);
+
+function save(){
+ localStorage.setItem("save",JSON.stringify(game));
+ update();
+}
+
+function update(){
+ document.getElementById("money").textContent=Math.floor(game.money);
+ document.getElementById("prestige").textContent=game.prestige;
+ document.getElementById("woodP").textContent=market.wood;
+ document.getElementById("leafP").textContent=market.leaves;
+ document.getElementById("stoneP").textContent=market.stone;
+ document.getElementById("inv").textContent=JSON.stringify(game.inv,null,2);
+}
+
+update();
+</script>
+</body>
+</html>
