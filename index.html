@@ -12,8 +12,6 @@ body{
  color:#fff;
  font-family:Arial, sans-serif;
 }
-
-/* STICKY HEADER */
 header{
  background:#1a1a1a;
  padding:10px;
@@ -23,7 +21,6 @@ header{
  top:0;
  z-index:1000;
 }
-
 button{
  padding:10px;
  margin:4px 0;
@@ -178,8 +175,8 @@ const EMPLOYEES={
  collector:{cost:200,leaves:3}
 };
 
-let prodMultiplier=1;
-let eventHistory=[];
+let prodMultiplier = 1;
+let eventHistory = [];
 
 function notify(t){
  let n=document.createElement("div");
@@ -194,6 +191,15 @@ function logEvent(t){
  if(eventHistory.length>20)eventHistory.pop();
  document.getElementById("eventLog").textContent=eventHistory.join("\n");
  notify(t);
+}
+
+function tempBoost(mult){
+ prodMultiplier *= mult;
+ logEvent("Production modified x"+mult+" (2 min)");
+ setTimeout(()=>{
+  prodMultiplier /= mult;
+  logEvent("Production returned to normal");
+ },120000);
 }
 
 let busy=false;
@@ -263,11 +269,21 @@ function resPerMin(){
  return r;
 }
 
-const EVENTS=[];
-for(let i=0;i<100;i++){
+const EVENTS = [
+ {t:"Investor funding +$200", f:()=>game.money+=200},
+ {t:"Equipment breakdown -$150", f:()=>game.money=Math.max(0,game.money-150)},
+ {t:"Worker motivation +20% production", f:()=>tempBoost(1.2)},
+ {t:"Worker strike -25% production", f:()=>tempBoost(0.75)},
+ {t:"New tools +10 stone", f:()=>game.inventory.stone+=10},
+ {t:"Storm damage -15 wood", f:()=>game.inventory.wood=Math.max(0,game.inventory.wood-15)},
+ {t:"Leaf surplus +20 leaves", f:()=>game.inventory.leaves+=20},
+ {t:"Supply theft -10 stone", f:()=>game.inventory.stone=Math.max(0,game.inventory.stone-10)}
+];
+
+while(EVENTS.length<100){
  EVENTS.push({
-  t:i%2===0?"Economic boost +$100":"Unexpected expense -$80",
-  f:()=>game.money+=i%2===0?100:-80
+  t:Math.random()<0.5?"Minor efficiency boost +5%":"Minor inefficiency -5%",
+  f:()=>tempBoost(Math.random()<0.5?1.05:0.95)
  });
 }
 
