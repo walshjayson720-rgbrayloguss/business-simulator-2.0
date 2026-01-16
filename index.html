@@ -12,12 +12,18 @@ body{
  color:#fff;
  font-family:Arial, sans-serif;
 }
+
+/* STICKY HEADER */
 header{
  background:#1a1a1a;
  padding:10px;
  display:flex;
  justify-content:space-between;
+ position:sticky;
+ top:0;
+ z-index:1000;
 }
+
 button{
  padding:10px;
  margin:4px 0;
@@ -28,7 +34,10 @@ button{
  font-size:14px;
 }
 button:disabled{background:#555;}
-.section{padding:10px;}
+.section{
+ padding:10px;
+ padding-top:60px;
+}
 .box{
  background:#141414;
  border:1px solid #333;
@@ -133,6 +142,11 @@ Time: <span id="time">0:00</span>
 <pre id="rpm"></pre>
 </div>
 
+<div class="box">
+<h3>Event Log</h3>
+<pre id="eventLog"></pre>
+</div>
+
 </div>
 
 <div id="inventory" class="section hidden">
@@ -164,12 +178,22 @@ const EMPLOYEES={
  collector:{cost:200,leaves:3}
 };
 
+let prodMultiplier=1;
+let eventHistory=[];
+
 function notify(t){
  let n=document.createElement("div");
  n.className="note";
  n.textContent=t;
  document.getElementById("notifications").appendChild(n);
  setTimeout(()=>n.remove(),3600);
+}
+
+function logEvent(t){
+ eventHistory.unshift("• "+t);
+ if(eventHistory.length>20)eventHistory.pop();
+ document.getElementById("eventLog").textContent=eventHistory.join("\n");
+ notify(t);
 }
 
 let busy=false;
@@ -182,18 +206,14 @@ function manual(type){
   stone:["Mining stone","Stone mined"]
  };
  document.getElementById("statusText").textContent=txt[type][0];
- notify(txt[type][0]);
-
  ["woodBtn","leafBtn","stoneBtn"].forEach(id=>document.getElementById(id).disabled=true);
  let p=0,bar=document.getElementById("progress");
  let i=setInterval(()=>{p+=6.7;bar.style.width=p+"%";},100);
-
  setTimeout(()=>{
   clearInterval(i);
   bar.style.width="100%";
   game.inventory[type]+=1;
   document.getElementById("statusText").textContent=txt[type][1];
-  notify(txt[type][1]);
   busy=false;
   ["woodBtn","leafBtn","stoneBtn"].forEach(id=>document.getElementById(id).disabled=false);
   save();
@@ -205,7 +225,7 @@ function buyStructure(id){
  if(game.money<s.cost)return;
  game.money-=s.cost;
  game.structures[id]++;
- notify("Bought "+id);
+ logEvent("Structure purchased: "+id);
  save();
 }
 
@@ -214,7 +234,7 @@ function buyEmployee(id){
  if(game.money<e.cost)return;
  game.money-=e.cost;
  game.employees[id]++;
- notify("Hired "+id);
+ logEvent("Employee hired: "+id);
  save();
 }
 
@@ -223,7 +243,7 @@ function sell(type,price){
  if(a<=0)return;
  game.inventory[type]=0;
  game.money+=a*price;
- notify("Sold "+type+" for $"+(a*price));
+ logEvent("Sold "+type+" for $"+(a*price));
  save();
 }
 
@@ -237,8 +257,26 @@ function resPerMin(){
   let d=EMPLOYEES[e];
   for(let k in d)if(k!=="cost")r[k]+=d[k]*game.employees[e];
  }
+ r.wood*=prodMultiplier;
+ r.leaves*=prodMultiplier;
+ r.stone*=prodMultiplier;
  return r;
 }
+
+const EVENTS=[];
+for(let i=0;i<100;i++){
+ EVENTS.push({
+  t:i%2===0?"Economic boost +$100":"Unexpected expense -$80",
+  f:()=>game.money+=i%2===0?100:-80
+ });
+}
+
+setInterval(()=>{
+ let e=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+ e.f();
+ logEvent(e.t);
+ save();
+},120000);
 
 setInterval(()=>{
  let r=resPerMin();
@@ -277,6 +315,3 @@ update();
 
 </body>
 </html>
-
-
-
