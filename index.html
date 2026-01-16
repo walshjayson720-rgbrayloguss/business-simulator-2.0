@@ -229,16 +229,10 @@ function sell(type,price){
  save();
 }
 
-/* EXACT production matching button text */
 function resPerMin(){
  return {
-  wood:
-   game.structures.treeFarm * 6 +
-   game.employees.lumber * 3,
-
-  leaves:
-   game.employees.collector * 3,
-
+  wood: game.structures.treeFarm * 6 + game.employees.lumber * 3,
+  leaves: game.employees.collector * 3,
   stone:
    game.structures.smallMine * 5 +
    game.structures.bigMine * 15 +
@@ -246,7 +240,6 @@ function resPerMin(){
  };
 }
 
-/* production tick */
 setInterval(()=>{
  let r=resPerMin();
  game.inventory.wood   += (r.wood   * prodMultiplier) / 60;
@@ -266,13 +259,6 @@ function save(){
 
 function update(){
  document.getElementById("money").textContent=Math.floor(game.money);
-
- let r=resPerMin();
- document.getElementById("rpm").textContent=
-  "Wood: "+(r.wood*prodMultiplier).toFixed(1)+"/min\n"+
-  "Leaves: "+(r.leaves*prodMultiplier).toFixed(1)+"/min\n"+
-  "Stone: "+(r.stone*prodMultiplier).toFixed(1)+"/min";
-
  document.getElementById("inv").textContent=JSON.stringify(game.inventory,null,2);
 }
 
@@ -280,6 +266,15 @@ setInterval(()=>{
  let s=Math.floor((Date.now()-game.start)/1000);
  document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
 },1000);
+
+/* ✅ ADD-ONLY FIX: force production rate to render */
+setInterval(()=>{
+ let r = resPerMin();
+ document.getElementById("rpm").textContent =
+  "Wood: " + (r.wood * prodMultiplier).toFixed(1) + "/min\n" +
+  "Leaves: " + (r.leaves * prodMultiplier).toFixed(1) + "/min\n" +
+  "Stone: " + (r.stone * prodMultiplier).toFixed(1) + "/min";
+},500);
 
 update();
 </script>
