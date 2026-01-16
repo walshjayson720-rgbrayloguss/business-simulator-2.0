@@ -4,17 +4,78 @@
 <meta charset="UTF-8">
 <title>Business Simulator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{margin:0;background:#0e0e0e;color:#fff;font-family:Arial}
-header{background:#1a1a1a;padding:10px;display:flex;justify-content:space-between}
-button{padding:8px;margin:3px;width:100%;background:#2ecc71;border:none;border-radius:6px}
-button:disabled{background:#555}
-.box{background:#141414;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px}
-.section{padding:10px}
-.hidden{display:none}
-#notifications{position:fixed;left:10px;bottom:10px;width:260px}
-.note{background:#1b1b1b;border-left:4px solid #2ecc71;padding:8px;margin-top:6px;animation:fade 4s forwards}
-@keyframes fade{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
+body{
+ margin:0;
+ background:#0e0e0e;
+ color:#fff;
+ font-family:Arial, sans-serif;
+}
+header{
+ background:#1a1a1a;
+ padding:10px;
+ display:flex;
+ justify-content:space-between;
+}
+button{
+ padding:10px;
+ margin:4px 0;
+ width:100%;
+ background:#2ecc71;
+ border:none;
+ border-radius:6px;
+ font-size:14px;
+}
+button:disabled{background:#555;}
+.section{padding:10px;}
+.box{
+ background:#141414;
+ border:1px solid #333;
+ border-radius:8px;
+ padding:10px;
+ margin-bottom:12px;
+}
+.hidden{display:none;}
+
+#statusBox{
+ position:fixed;
+ left:10px;
+ top:80px;
+ width:220px;
+ background:#111;
+ border:1px solid #333;
+ padding:8px;
+}
+#progressBar{
+ width:100%;
+ height:10px;
+ background:#333;
+ margin-top:6px;
+}
+#progress{
+ width:0%;
+ height:100%;
+ background:#2ecc71;
+}
+
+#notifications{
+ position:fixed;
+ left:10px;
+ bottom:10px;
+ width:260px;
+}
+.note{
+ background:#1b1b1b;
+ border-left:4px solid #2ecc71;
+ padding:8px;
+ margin-top:6px;
+ opacity:0;
+ transform:translateX(-20px);
+ animation:slideIn 0.3s forwards, fadeOut 0.5s forwards 3s;
+}
+@keyframes slideIn{to{opacity:1;transform:translateX(0);}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(-20px);}}
 </style>
 </head>
 
@@ -23,183 +84,196 @@ button:disabled{background:#555}
 <header>
 <div>
 Money: $<span id="money">0</span><br>
-Prestige: <span id="prestige">0</span>
+Time: <span id="time">0:00</span>
 </div>
 <div>
-<button onclick="toggle('inventory')">Inventory</button>
-<button onclick="toggle('settings')">Settings</button>
+<button onclick="toggleInventory()">Inventory</button>
 </div>
 </header>
+
+<div id="statusBox">
+<div id="statusText">Idle</div>
+<div id="progressBar"><div id="progress"></div></div>
+</div>
 
 <div id="notifications"></div>
 
 <div class="section">
 
 <div class="box">
-<h3>Manual</h3>
-<button onclick="manual('wood')">Chop Wood</button>
-<button onclick="manual('leaves')">Collect Leaves</button>
-<button onclick="manual('stone')">Mine Stone</button>
+<h3>Manual Actions</h3>
+<button id="woodBtn" onclick="manual('wood')">Chop Wood</button>
+<button id="leafBtn" onclick="manual('leaves')">Collect Leaves</button>
+<button id="stoneBtn" onclick="manual('stone')">Mine Stone</button>
 </div>
 
 <div class="box">
 <h3>Structures</h3>
-<button onclick="buy('mine',500)">Mine (+10 stone/min)</button>
-<button onclick="buy('farm',400)">Farm (+10 wood/min)</button>
-<button onclick="buy('factory',800)">Factory (+10 leaves/min)</button>
+<button onclick="buyStructure('smallMine')">Small Mine ($300) +5 stone/min</button>
+<button onclick="buyStructure('bigMine')">Big Mine ($1200) +15 stone/min</button>
+<button onclick="buyStructure('treeFarm')">Tree Farm ($400) +6 wood/min</button>
 </div>
 
 <div class="box">
 <h3>Employees</h3>
-<button onclick="hire('miner',300)">Miner (+5 stone/min)</button>
-<button onclick="hire('logger',300)">Logger (+5 wood/min)</button>
-<button onclick="hire('collector',300)">Collector (+5 leaves/min)</button>
+<button onclick="buyEmployee('miner')">Miner ($200) +3 stone/min</button>
+<button onclick="buyEmployee('lumber')">Lumberjack ($200) +3 wood/min</button>
+<button onclick="buyEmployee('collector')">Collector ($200) +3 leaves/min</button>
 </div>
 
 <div class="box">
-<h3>Upgrades</h3>
-<button onclick="upgrade('tools')">Better Tools ($1000)</button>
-<button onclick="upgrade('machines')">Machines ($1500)</button>
+<h3>Sell</h3>
+<button onclick="sell('wood',3)">Sell Wood ($3)</button>
+<button onclick="sell('leaves',1)">Sell Leaves ($1)</button>
+<button onclick="sell('stone',5)">Sell Stone ($5)</button>
 </div>
 
 <div class="box">
-<h3>Automation</h3>
-<button onclick="auto=true">Enable Auto Actions</button>
-</div>
-
-<div class="box">
-<h3>Market</h3>
-Wood: $<span id="woodP"></span><br>
-Leaves: $<span id="leafP"></span><br>
-Stone: $<span id="stoneP"></span>
-</div>
-
-<div class="box">
-<h3>Prestige</h3>
-<button onclick="prestige()">Prestige (Reset)</button>
+<h3>Production Rates</h3>
+<pre id="rpm"></pre>
 </div>
 
 </div>
 
 <div id="inventory" class="section hidden">
 <div class="box">
+<h3>Inventory</h3>
 <pre id="inv"></pre>
-<button onclick="toggle('inventory')">Close</button>
-</div>
-</div>
-
-<div id="settings" class="section hidden">
-<div class="box">
-<button onclick="reset()">Reset Save</button>
-<button onclick="toggle('settings')">Close</button>
+<button onclick="toggleInventory()">Close</button>
 </div>
 </div>
 
 <script>
-let game=JSON.parse(localStorage.getItem("save"))||{
+let game = JSON.parse(localStorage.getItem("bizSave")) || {
  money:100,
- prestige:0,
- inv:{wood:0,leaves:0,stone:0},
- structures:{mine:0,farm:0,factory:0},
- emp:{miner:0,logger:0,collector:0},
- upgrades:{tools:0,machines:0},
- auto:false
+ start:Date.now(),
+ inventory:{wood:0,leaves:0,stone:0},
+ structures:{smallMine:0,bigMine:0,treeFarm:0},
+ employees:{miner:0,lumber:0,collector:0}
 };
 
-let market={wood:3,leaves:1,stone:5};
+const STRUCTURES={
+ smallMine:{cost:300,stone:5},
+ bigMine:{cost:1200,stone:15},
+ treeFarm:{cost:400,wood:6}
+};
+
+const EMPLOYEES={
+ miner:{cost:200,stone:3},
+ lumber:{cost:200,wood:3},
+ collector:{cost:200,leaves:3}
+};
 
 function notify(t){
  let n=document.createElement("div");
  n.className="note";
  n.textContent=t;
  document.getElementById("notifications").appendChild(n);
- setTimeout(()=>n.remove(),4000);
+ setTimeout(()=>n.remove(),3600);
 }
 
-function manual(r){
- game.inv[r]+=1;
- notify(r+" +1");
+let busy=false;
+function manual(type){
+ if(busy)return;
+ busy=true;
+ const txt={
+  wood:["Chopping tree","Tree chopped"],
+  leaves:["Collecting leaves","Leaves collected"],
+  stone:["Mining stone","Stone mined"]
+ };
+ document.getElementById("statusText").textContent=txt[type][0];
+ notify(txt[type][0]);
+
+ ["woodBtn","leafBtn","stoneBtn"].forEach(id=>document.getElementById(id).disabled=true);
+ let p=0,bar=document.getElementById("progress");
+ let i=setInterval(()=>{p+=6.7;bar.style.width=p+"%";},100);
+
+ setTimeout(()=>{
+  clearInterval(i);
+  bar.style.width="100%";
+  game.inventory[type]+=1;
+  document.getElementById("statusText").textContent=txt[type][1];
+  notify(txt[type][1]);
+  busy=false;
+  ["woodBtn","leafBtn","stoneBtn"].forEach(id=>document.getElementById(id).disabled=false);
+  save();
+ },1500);
+}
+
+function buyStructure(id){
+ let s=STRUCTURES[id];
+ if(game.money<s.cost)return;
+ game.money-=s.cost;
+ game.structures[id]++;
+ notify("Bought "+id);
  save();
 }
 
-function buy(t,c){
- if(game.money<c)return;
- game.money-=c;
- game.structures[t]++;
+function buyEmployee(id){
+ let e=EMPLOYEES[id];
+ if(game.money<e.cost)return;
+ game.money-=e.cost;
+ game.employees[id]++;
+ notify("Hired "+id);
  save();
 }
 
-function hire(t,c){
- if(game.money<c)return;
- game.money-=c;
- game.emp[t]++;
+function sell(type,price){
+ let a=Math.floor(game.inventory[type]);
+ if(a<=0)return;
+ game.inventory[type]=0;
+ game.money+=a*price;
+ notify("Sold "+type+" for $"+(a*price));
  save();
 }
 
-function upgrade(t){
- let cost=t==="tools"?1000:1500;
- if(game.money<cost)return;
- game.money-=cost;
- game.upgrades[t]++;
- save();
-}
-
-function prestige(){
- if(game.money<1000000)return;
- game.prestige++;
- game.money=100;
- game.inv={wood:0,leaves:0,stone:0};
- game.structures={mine:0,farm:0,factory:0};
- game.emp={miner:0,logger:0,collector:0};
- game.upgrades={tools:0,machines:0};
- notify("Prestiged!");
- save();
-}
-
-function reset(){
- localStorage.clear();
- location.reload();
-}
-
-function toggle(id){
- document.getElementById(id).classList.toggle("hidden");
+function resPerMin(){
+ let r={wood:0,leaves:0,stone:0};
+ for(let s in game.structures){
+  let d=STRUCTURES[s];
+  for(let k in d)if(k!=="cost")r[k]+=d[k]*game.structures[s];
+ }
+ for(let e in game.employees){
+  let d=EMPLOYEES[e];
+  for(let k in d)if(k!=="cost")r[k]+=d[k]*game.employees[e];
+ }
+ return r;
 }
 
 setInterval(()=>{
- let mult=1+game.prestige*0.1;
- game.inv.stone+=(game.structures.mine*10+game.emp.miner*5)*mult/60;
- game.inv.wood+=(game.structures.farm*10+game.emp.logger*5)*mult/60;
- game.inv.leaves+=(game.structures.factory*10+game.emp.collector*5)*mult/60;
+ let r=resPerMin();
+ game.inventory.wood+=r.wood/60;
+ game.inventory.leaves+=r.leaves/60;
+ game.inventory.stone+=r.stone/60;
  save();
 },1000);
 
-setInterval(()=>{
- market.wood=(Math.random()*2+1).toFixed(2);
- market.leaves=(Math.random()*1.5+0.5).toFixed(2);
- market.stone=(Math.random()*3+2).toFixed(2);
-},30000);
-
-setInterval(()=>{
- let e=Math.random();
- if(e<0.3) notify("Market Boom!");
- else if(e<0.6) notify("Worker Strike!");
-},120000);
+function toggleInventory(){
+ document.getElementById("inventory").classList.toggle("hidden");
+}
 
 function save(){
- localStorage.setItem("save",JSON.stringify(game));
+ localStorage.setItem("bizSave",JSON.stringify(game));
  update();
 }
 
 function update(){
  document.getElementById("money").textContent=Math.floor(game.money);
- document.getElementById("prestige").textContent=game.prestige;
- document.getElementById("woodP").textContent=market.wood;
- document.getElementById("leafP").textContent=market.leaves;
- document.getElementById("stoneP").textContent=market.stone;
- document.getElementById("inv").textContent=JSON.stringify(game.inv,null,2);
+ let r=resPerMin();
+ document.getElementById("rpm").textContent=
+  "Wood: "+r.wood.toFixed(1)+"/min\n"+
+  "Leaves: "+r.leaves.toFixed(1)+"/min\n"+
+  "Stone: "+r.stone.toFixed(1)+"/min";
+ document.getElementById("inv").textContent=JSON.stringify(game.inventory,null,2);
 }
+
+setInterval(()=>{
+ let s=Math.floor((Date.now()-game.start)/1000);
+ document.getElementById("time").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+},1000);
 
 update();
 </script>
+
 </body>
 </html>
