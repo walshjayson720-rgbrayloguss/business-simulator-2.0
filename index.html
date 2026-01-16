@@ -195,9 +195,11 @@ function logEvent(t){
 
 function tempBoost(mult){
  prodMultiplier *= mult;
+ update();
  logEvent("Production modified x"+mult+" (2 min)");
  setTimeout(()=>{
   prodMultiplier /= mult;
+  update();
   logEvent("Production returned to normal");
  },120000);
 }
@@ -232,6 +234,7 @@ function buyStructure(id){
  game.money-=s.cost;
  game.structures[id]++;
  logEvent("Structure purchased: "+id);
+ update();
  save();
 }
 
@@ -241,6 +244,7 @@ function buyEmployee(id){
  game.money-=e.cost;
  game.employees[id]++;
  logEvent("Employee hired: "+id);
+ update();
  save();
 }
 
@@ -269,15 +273,15 @@ function resPerMin(){
  return r;
 }
 
-const EVENTS = [
- {t:"Investor funding +$200", f:()=>game.money+=200},
- {t:"Equipment breakdown -$150", f:()=>game.money=Math.max(0,game.money-150)},
- {t:"Worker motivation +20% production", f:()=>tempBoost(1.2)},
- {t:"Worker strike -25% production", f:()=>tempBoost(0.75)},
- {t:"New tools +10 stone", f:()=>game.inventory.stone+=10},
- {t:"Storm damage -15 wood", f:()=>game.inventory.wood=Math.max(0,game.inventory.wood-15)},
- {t:"Leaf surplus +20 leaves", f:()=>game.inventory.leaves+=20},
- {t:"Supply theft -10 stone", f:()=>game.inventory.stone=Math.max(0,game.inventory.stone-10)}
+const EVENTS=[
+ {t:"Investor funding +$200",f:()=>game.money+=200},
+ {t:"Equipment breakdown -$150",f:()=>game.money=Math.max(0,game.money-150)},
+ {t:"Worker motivation +20% production",f:()=>tempBoost(1.2)},
+ {t:"Worker strike -25% production",f:()=>tempBoost(0.75)},
+ {t:"New tools +10 stone",f:()=>game.inventory.stone+=10},
+ {t:"Storm damage -15 wood",f:()=>game.inventory.wood=Math.max(0,game.inventory.wood-15)},
+ {t:"Leaf surplus +20 leaves",f:()=>game.inventory.leaves+=20},
+ {t:"Supply theft -10 stone",f:()=>game.inventory.stone=Math.max(0,game.inventory.stone-10)}
 ];
 
 while(EVENTS.length<100){
@@ -290,7 +294,7 @@ while(EVENTS.length<100){
 setInterval(()=>{
  let e=EVENTS[Math.floor(Math.random()*EVENTS.length)];
  e.f();
- logEvent(e.t);
+ update();
  save();
 },120000);
 
